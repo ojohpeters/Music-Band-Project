@@ -1,43 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useSearchParams } from "next/navigation"; // This imports useSearchParams
 import { motion } from "framer-motion";
-import { useMessage } from "@/context/MessageContext"; // Adjust import as needed
+import { useRouter } from "next/navigation";
+import { useMessage } from "@/context/MessageContext"; // Assuming the message context exists
 
-
-interface FormData {
-  id?: string;
-  title?: string;
-  artist?: string;
-  type?: string;
-  name?: string;
-  email?: string;
-  date?: string;
-  // Add other fields as needed
-}
-
-
-const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ type }) => {
+const EditForm: React.FC = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams();  // Get query parameters
   const { setMessage } = useMessage();
-  const [formData, setFormData] = useState<FormData>({});
+  
+  const [formData, setFormData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-
+  
+  const type = searchParams.get("type");  // Get 'type' from URL query
+  const itemId = searchParams.get("id");  // Get 'id' from URL query
 
   useEffect(() => {
-    const itemId = searchParams.get("id");
-
-    if (!itemId) {
-      setMessage({ type: "error", content: "No ID provided" });
-      router.push("/admin"); // Redirect back to admin page
+    if (!type || !itemId) {
+      setMessage({
+        type: "error",
+        content: "Missing type or ID parameter",
+      });
+      router.push("/admin");  // Redirect to the admin page if missing parameters
       return;
     }
 
     const fetchData = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         const token = localStorage.getItem("authToken");
         if (!token) {
@@ -56,7 +47,6 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
 
         const data = await response.json();
         setFormData(data);
-
       } catch (error) {
         console.error("Error fetching item data:", error);
         setMessage({
@@ -64,23 +54,21 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
           content: error instanceof Error ? error.message : "Failed to load data",
         });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [searchParams, type]);
-
+  }, [type, itemId, router, setMessage]); // Trigger effect on type or itemId change
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       const response = await fetch(`http://127.0.0.1:8000/api/${type}/${formData.id}`, {
         method: "PUT",
         headers: {
@@ -90,22 +78,15 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
         body: JSON.stringify(formData),
       });
 
-
       if (!response.ok) {
-
         throw new Error(`Failed to update ${type}`);
-
       }
 
-
       setMessage({
-
-        type: 'success',
-
-        content: `${type} updated successfully`
-
+        type: "success",
+        content: `${type} updated successfully`,
       });
-      router.push("/admin")
+      router.push("/admin");
     } catch (error) {
       setMessage({
         type: "error",
@@ -113,12 +94,13 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
       });
     }
   };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -128,12 +110,14 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
       transition={{ duration: 0.5 }}
       className="container mx-auto px-6 py-8"
     >
-      <h2 className="text-2xl font-bold mb-4">Edit {type.replace("-", " ")}</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        Edit {type ? type.replace("-", " ") : "Unknown Type"}
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Music Track Fields */}
+        {/* Render form based on `type` */}
         {type === "music-tracks" && (
           <>
-            <input type="hidden" name="id" value={formData.id} onChange={handleChange} />
+            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
             <div>
               <label htmlFor="title" className="block mb-1">Title:</label>
               <input
@@ -172,24 +156,56 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
             </div>
           </>
         )}
-         {/* Event Fields */}
-         {type === "events" && (
+        
+        {/* Rendering for Users */}
+        {type === "users" && (
           <>
-            <input type="hidden" name="id" value={formData.id} onChange={handleChange} />
+            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
             <div>
-              <label htmlFor="title" className="block mb-1">Title:</label>
+              <label htmlFor="name" className="block mb-1">Name:</label>
               <input
                 type="text"
-                id="title"
-                name="title"
-                value={formData.title || ""}
+                id="name"
+                name="name"
+                value={formData.name || ""}
                 onChange={handleChange}
                 className="w-full border border-gray-300 px-3 py-2 rounded"
                 required
               />
             </div>
             <div>
-              <label htmlFor="date" className="block mb-1">Date:</label>
+              <label htmlFor="email" className="block mb-1">Email:</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              />
+            </div>
+          </>
+        )}
+
+        {/* Rendering for Events */}
+        {type === "events" && (
+          <>
+            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
+            <div>
+              <label htmlFor="name" className="block mb-1">Event Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="date" className="block mb-1">Event Date:</label>
               <input
                 type="date"
                 id="date"
@@ -202,6 +218,7 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
             </div>
           </>
         )}
+
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Save Changes
         </button>
@@ -209,6 +226,5 @@ const EditForm: React.FC<{ type: "music-tracks" | "events" | "users" }> = ({ typ
     </motion.div>
   );
 };
-
 
 export default EditForm;

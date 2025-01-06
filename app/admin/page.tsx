@@ -53,15 +53,18 @@ const AdminPage = () => {
         return response.json();
       };
 
+
       const [musicData, userData, eventData] = await Promise.all([
         fetchWithAuth("http://127.0.0.1:8000/api/music-tracks"),
         fetchWithAuth("http://127.0.0.1:8000/api/users"),
         fetchWithAuth("http://127.0.0.1:8000/api/events")
       ]);
 
+
       setMusicTracks(musicData);
       setUsers(userData);
       setEvents(eventData);
+
 
       globalSetMessage({
         type: 'success',
@@ -79,37 +82,14 @@ const AdminPage = () => {
   };
 
   const handleEdit = async (type: string, id: string) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://127.0.0.1:8000/api/${type}/${id}`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${type} details`);
-      }
-
-      const data = await response.json();
-      setFormData(data);
-      setIsEditing(true);
-    } catch (error) {
-      console.error("Error fetching details:", error);
-      globalSetMessage({
-        type: 'error',
-        content: error instanceof Error ? error.message : 'Failed to fetch data'
-      });
-    }
+    router.push(`/edit?type=${type}&id=${id}`);
   };
+
 
   const handleSave = async (type: string, data: any) => {
     try {
       const token = localStorage.getItem('authToken');
-      const url = isEditing
-        ? `http://127.0.0.1:8000/api/${type}/${data.id}`
-        : `http://127.0.0.1:8000/api/${type}`;
+      const url = isEditing ? `http://127.0.0.1:8000/api/${type}/${data.id}` : `http://127.0.0.1:8000/api/${type}`;
       const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -121,14 +101,17 @@ const AdminPage = () => {
         body: JSON.stringify(data),
       });
 
+
       if (!response.ok) {
         throw new Error(`Failed to ${isEditing ? 'update' : 'create'} ${type}`);
       }
+
 
       globalSetMessage({
         type: 'success',
         content: `${type} ${isEditing ? 'updated' : 'created'} successfully`
       });
+
 
       setFormData({});
       setIsEditing(false);
@@ -142,24 +125,25 @@ const AdminPage = () => {
     }
   };
 
+
   const handleDelete = async (type: string, id: string) => {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(`http://127.0.0.1:8000/api/${type}/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Authorization": `Bearer ${token}`, },
       });
 
       if (!response.ok) {
         throw new Error(`Failed to delete ${type}`);
       }
 
+
       globalSetMessage({
         type: 'success',
         content: `${type} deleted successfully`
       });
+
       fetchData();
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
@@ -182,6 +166,7 @@ const AdminPage = () => {
         return null;
     }
   };
+
 
   const renderMusicTracks = () => (
     <div>
@@ -221,11 +206,12 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("music-tracks", track.id)}
+                    onClick={() => handleDelete("music-tracks", track.id)}  // Calls handleDelete with the "users" type and user.id
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
+
                 </td>
               </tr>
             ))}
@@ -235,10 +221,7 @@ const AdminPage = () => {
       {isEditing && formData && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Edit Music Track</h3>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleSave("music-tracks", formData);
-          }}>
+          <form onSubmit={(e) => { e.preventDefault(); handleSave("music-tracks", formData); }}>
             <input
               type="text"
               className="border p-2 mb-2 w-full"
@@ -308,11 +291,12 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("users", user.id)}
+                    onClick={() => handleDelete("users", user.id)}  // Calls handleDelete with the "users" type and user.id
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
+
                 </td>
               </tr>
             ))}
@@ -322,10 +306,7 @@ const AdminPage = () => {
       {isEditing && formData && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Edit User</h3>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleSave("users", formData);
-          }}>
+          <form onSubmit={(e) => { e.preventDefault(); handleSave("users", formData); }}>
             <input
               type="text"
               className="border p-2 mb-2 w-full"
@@ -364,9 +345,9 @@ const AdminPage = () => {
       >
         Add Event
       </button>
-      {events.length === 0 ? (
-        <p>No events found.</p>
-      ) : (
+      {events.length === 0 || events.every(event => Object.keys(event).length === 0 || !event.name || !event.date) ? (
+  <p>No events found.</p>
+) : (
         <table className="min-w-full mt-4 border-collapse border border-gray-300">
           <thead>
             <tr>
@@ -388,11 +369,12 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("events", event.id)}
+                    onClick={() => handleDelete("events", event.id)}  // Calls handleDelete with the "users" type and user.id
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
+
                 </td>
               </tr>
             ))}
@@ -402,10 +384,7 @@ const AdminPage = () => {
       {isEditing && formData && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Edit Event</h3>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleSave("events", formData);
-          }}>
+          <form onSubmit={(e) => { e.preventDefault(); handleSave("events", formData); }}>
             <input
               type="text"
               className="border p-2 mb-2 w-full"
@@ -434,28 +413,35 @@ const AdminPage = () => {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-      <div className="flex space-x-4 mb-4">
-        <button
-          className={`px-4 py-2 rounded ${selectedTab === "Music" ? "bg-blue-500" : "bg-gray-300"}`}
-          onClick={() => setSelectedTab("Music")}
-        >
-          Music
-        </button>
-        <button
-          className={`px-4 py-2 rounded ${selectedTab === "Users" ? "bg-blue-500" : "bg-gray-300"}`}
-          onClick={() => setSelectedTab("Users")}
-        >
-          Users
-        </button>
-        <button
-          className={`px-4 py-2 rounded ${selectedTab === "Events" ? "bg-blue-500" : "bg-gray-300"}`}
-          onClick={() => setSelectedTab("Events")}
-        >
-          Events
-        </button>
-      </div>
-      {renderTabContent()}
+      {isLoading && <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+      </div>}
+      {!isLoading &&
+        <div>
+          <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+          <div className="flex space-x-4 mb-4">
+            <button
+              className={`px-4 py-2 rounded ${selectedTab === "Music" ? "bg-blue-500 text-white" : "bg-gray-300"}`}
+              onClick={() => setSelectedTab("Music")}
+            >
+              Music
+            </button>
+            <button
+              className={`px-4 py-2 rounded ${selectedTab === "Users" ? "bg-blue-500 text-white" : "bg-gray-300"}`}
+              onClick={() => setSelectedTab("Users")}
+            >
+              Users
+            </button>
+            <button
+              className={`px-4 py-2 rounded ${selectedTab === "Events" ? "bg-blue-500 text-white" : "bg-gray-300"}`}
+              onClick={() => setSelectedTab("Events")}
+            >
+              Events
+            </button>
+          </div>
+          {renderTabContent()}
+        </div>
+      }
     </div>
   );
 };

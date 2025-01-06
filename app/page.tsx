@@ -1,101 +1,153 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { useMessage } from '@/context/MessageContext'
+
+type Track = {
+  id: number
+  title: string
+  artist: string
+  album: string
+  file_path: string
+}
+
+type Event = {
+  id: number
+  name: string
+  date: string
+  location: string
+  imageUrl: string
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [featuredTracks, setFeaturedTracks] = useState<Track[]>([])
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
+  const { setMessage } = useMessage()
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Simulating API calls
+        const [tracksResponse, eventsResponse] = await Promise.all([
+          fetch('http://127.0.0.1:8000/api/music-tracks'),
+          fetch('http://127.0.0.1:8000/api/events'),
+        ]);
+  
+        let tracksData = null;
+        let eventsData = null;
+  
+        if (tracksResponse.ok) {
+          tracksData = await tracksResponse.json();
+          setFeaturedTracks(tracksData);
+        } else {
+          console.error('Error fetching tracks:', tracksResponse.statusText);
+          setMessage((prev) => ({
+            ...prev,
+            type: 'error',
+            content: 'Failed to load tracks data.',
+          }));
+        }
+  
+        if (eventsResponse.ok) {
+          eventsData = await eventsResponse.json();
+          setUpcomingEvents(eventsData);
+        } else {
+          console.error('Error fetching events:', eventsResponse.statusText);
+          setMessage((prev) => ({
+            ...prev,
+            type: 'error',
+            content: 'Failed to load events data.',
+          }));
+        }
+  
+        if (tracksData && eventsData) {
+          setMessage({
+            type: 'success',
+            content: 'Data loaded successfully.',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setMessage({
+          type: 'error',
+          content: 'An unexpected error occurred. Please try again later.',
+        });
+      }
+    };
+  
+    fetchData();
+  }, [setMessage]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h1 className="text-4xl font-semibold text-gray-800 dark:text-white text-shadow">Welcome to Music Band</h1>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Featured Tracks</h2>
+
+        {/* Check if featuredTracks is empty */}
+        {featuredTracks.length === 0 || featuredTracks[0] == null ? (
+          <p className="text-xl text-center text-gray-500 dark:text-gray-300">No tracks available at the moment...</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+            {featuredTracks.map((track, index) => (
+              <motion.div
+                key={track.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
+              >
+                <img src={track.file_path} alt={track.title} className="w-full h-48 object-cover" />
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{track.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{track.artist}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{track.album}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-12">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Upcoming Events</h2>
+
+        {/* Check if upcomingEvents is empty or if the first event's data is empty */}
+        {upcomingEvents.length === 0 || !upcomingEvents[0] ? (
+          <p className="text-xl text-center text-gray-500 dark:text-gray-300">No events at the moment...</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+            {upcomingEvents.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
+              >
+                <img src={event.imageUrl} alt={event.name} className="w-full h-48 object-cover" />
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{event.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{event.date}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{event.location}</p>
+                  <Link href={`/events/${event.id}`}>
+                    <span className="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded cursor-pointer transition-colors duration-300">
+                      View Details
+                    </span>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
 }

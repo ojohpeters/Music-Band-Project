@@ -1,0 +1,30 @@
+import { NextResponse } from "next/server";
+
+// Replace this URL with the base URL of your Laravel API
+const API_BASE_URL = "http://your-laravel-api-domain/api";
+
+export async function GET() {
+  try {
+    // Fetch data from the Laravel API
+    const response = await fetch(`${API_BASE_URL}/tracks`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Handle non-200 status codes
+    if (!response.ok) {
+      throw new Error(`Error fetching tracks: ${response.statusText}`);
+    }
+
+    // Parse the JSON response
+    const tracks = await response.json();
+
+    // Return the data as a JSON response
+    return NextResponse.json(tracks);
+  } catch (error) {
+    // Handle errors (e.g., API down, network issues)
+    console.error(error);
+    return NextResponse.json({ error: "Failed to fetch tracks" }, { status: 500 });
+  }
+}

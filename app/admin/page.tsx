@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { useMessage } from "@/context/MessageContext";
 
@@ -11,8 +11,6 @@ const AdminPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("Music");
-  const [formData, setFormData] = useState<any>({});
-  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter();
@@ -53,18 +51,15 @@ const AdminPage = () => {
         return response.json();
       };
 
-
       const [musicData, userData, eventData] = await Promise.all([
         fetchWithAuth("http://127.0.0.1:8000/api/music-tracks"),
         fetchWithAuth("http://127.0.0.1:8000/api/users"),
         fetchWithAuth("http://127.0.0.1:8000/api/events")
       ]);
 
-
-      setMusicTracks(musicData);
-      setUsers(userData);
-      setEvents(eventData);
-
+      setMusicTracks(Array.isArray(musicData) ? musicData : (musicData.MusicTracks || []));
+      setUsers(Array.isArray(userData) ? userData : (userData.Users || []));
+      setEvents(Array.isArray(eventData) ? eventData : (eventData.Events || []));
 
       globalSetMessage({
         type: 'success',
@@ -81,50 +76,9 @@ const AdminPage = () => {
     }
   };
 
-  const handleEdit = async (type: string, id: string) => {
-    router.push(`/edit?type=${type}&id=${id}`);
+  const handleEdit = (type: string, id?: string) => {
+    router.push(`/edit?type=${type}${id ? `&id=${id}` : ''}`);
   };
-
-
-  const handleSave = async (type: string, data: any) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const url = isEditing ? `http://127.0.0.1:8000/api/${type}/${data.id}` : `http://127.0.0.1:8000/api/${type}`;
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} ${type}`);
-      }
-
-
-      globalSetMessage({
-        type: 'success',
-        content: `${type} ${isEditing ? 'updated' : 'created'} successfully`
-      });
-
-
-      setFormData({});
-      setIsEditing(false);
-      fetchData();
-    } catch (error) {
-      console.error(`Error saving ${type}:`, error);
-      globalSetMessage({
-        type: 'error',
-        content: error instanceof Error ? error.message : 'Failed to save data'
-      });
-    }
-  };
-
 
   const handleDelete = async (type: string, id: string) => {
     try {
@@ -137,7 +91,6 @@ const AdminPage = () => {
       if (!response.ok) {
         throw new Error(`Failed to delete ${type}`);
       }
-
 
       globalSetMessage({
         type: 'success',
@@ -167,17 +120,14 @@ const AdminPage = () => {
     }
   };
 
-
   const renderMusicTracks = () => (
     <div>
       <h2 className="text-xl font-bold mb-4">Music Tracks</h2>
       <button
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4"
-        onClick={() => {
-          setFormData({});
-          setIsEditing(false);
-        }}
+        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 flex items-center"
+        onClick={() => handleEdit("music-tracks")}
       >
+        <PlusIcon className="h-5 w-5 mr-2" />
         Add Music Track
       </button>
       {musicTracks.length === 0 ? (
@@ -188,7 +138,7 @@ const AdminPage = () => {
             <tr>
               <th className="border border-gray-300 px-4 py-2">Title</th>
               <th className="border border-gray-300 px-4 py-2">Artist</th>
-              <th className="border border-gray-300 px-4 py-2">Type</th>
+              <th className="border border-gray-300 px-4 py-2">Album</th>
               <th className="border border-gray-300 px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -197,7 +147,7 @@ const AdminPage = () => {
               <tr key={track.id}>
                 <td className="border border-gray-300 px-4 py-2">{track.title}</td>
                 <td className="border border-gray-300 px-4 py-2">{track.artist}</td>
-                <td className="border border-gray-300 px-4 py-2">{track.type}</td>
+                <td className="border border-gray-300 px-4 py-2">{track.album}</td>
                 <td className="border border-gray-300 px-4 py-2">
                   <button
                     onClick={() => handleEdit("music-tracks", track.id)}
@@ -206,51 +156,16 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("music-tracks", track.id)}  // Calls handleDelete with the "users" type and user.id
+                    onClick={() => handleDelete("music-tracks", track.id)}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
-
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-      {isEditing && formData && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Edit Music Track</h3>
-          <form onSubmit={(e) => { e.preventDefault(); handleSave("music-tracks", formData); }}>
-            <input
-              type="text"
-              className="border p-2 mb-2 w-full"
-              placeholder="Title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-            <input
-              type="text"
-              className="border p-2 mb-2 w-full"
-              placeholder="Artist"
-              value={formData.artist}
-              onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
-            />
-            <input
-              type="text"
-              className="border p-2 mb-2 w-full"
-              placeholder="Type"
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Update Music Track
-            </button>
-          </form>
-        </div>
       )}
     </div>
   );
@@ -259,12 +174,10 @@ const AdminPage = () => {
     <div>
       <h2 className="text-xl font-bold mb-4">Users</h2>
       <button
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4"
-        onClick={() => {
-          setFormData({});
-          setIsEditing(false);
-        }}
+        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 flex items-center"
+        onClick={() => handleEdit("users")}
       >
+        <PlusIcon className="h-5 w-5 mr-2" />
         Add User
       </button>
       {users.length === 0 ? (
@@ -291,44 +204,16 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("users", user.id)}  // Calls handleDelete with the "users" type and user.id
+                    onClick={() => handleDelete("users", user.id)}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
-
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-      {isEditing && formData && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Edit User</h3>
-          <form onSubmit={(e) => { e.preventDefault(); handleSave("users", formData); }}>
-            <input
-              type="text"
-              className="border p-2 mb-2 w-full"
-              placeholder="Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <input
-              type="email"
-              className="border p-2 mb-2 w-full"
-              placeholder="Email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Update User
-            </button>
-          </form>
-        </div>
       )}
     </div>
   );
@@ -337,17 +222,15 @@ const AdminPage = () => {
     <div>
       <h2 className="text-xl font-bold mb-4">Events</h2>
       <button
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4"
-        onClick={() => {
-          setFormData({});
-          setIsEditing(false);
-        }}
+        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 flex items-center"
+        onClick={() => handleEdit("events")}
       >
+        <PlusIcon className="h-5 w-5 mr-2" />
         Add Event
       </button>
       {events.length === 0 || events.every(event => Object.keys(event).length === 0 || !event.name || !event.date) ? (
   <p>No events found.</p>
-) : (
+      ) : (
         <table className="min-w-full mt-4 border-collapse border border-gray-300">
           <thead>
             <tr>
@@ -369,54 +252,28 @@ const AdminPage = () => {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("events", event.id)}  // Calls handleDelete with the "users" type and user.id
+                    onClick={() => handleDelete("events", event.id)}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
-
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {isEditing && formData && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Edit Event</h3>
-          <form onSubmit={(e) => { e.preventDefault(); handleSave("events", formData); }}>
-            <input
-              type="text"
-              className="border p-2 mb-2 w-full"
-              placeholder="Event Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <input
-              type="date"
-              className="border p-2 mb-2 w-full"
-              placeholder="Date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Update Event
-            </button>
-          </form>
-        </div>
-      )}
     </div>
   );
 
   return (
     <div className="p-8">
-      {isLoading && <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-      </div>}
-      {!isLoading &&
+      {isLoading && (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      {!isLoading && (
         <div>
           <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
           <div className="flex space-x-4 mb-4">
@@ -441,9 +298,10 @@ const AdminPage = () => {
           </div>
           {renderTabContent()}
         </div>
-      }
+      )}
     </div>
   );
 };
 
 export default AdminPage;
+

@@ -24,10 +24,12 @@ type Event = {
 export default function Home() {
   const [featuredTracks, setFeaturedTracks] = useState<Track[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const { setMessage } = useMessage()
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         // Simulating API calls
         const [tracksResponse, eventsResponse] = await Promise.all([
@@ -74,11 +76,23 @@ export default function Home() {
           type: 'error',
           content: 'An unexpected error occurred. Please try again later.',
         });
+      } finally {
+        setIsLoading(false);
       }
     };
   
     fetchData();
   }, [setMessage]);
+
+  const Spinner = () => (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+
+  if (isLoading) {
+    return <Spinner />;
+  }
 
   return (
     <motion.div
@@ -151,3 +165,4 @@ export default function Home() {
     </motion.div>
   )
 }
+

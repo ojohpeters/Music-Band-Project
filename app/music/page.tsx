@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useMessage } from '@/context/MessageContext'
+import AudioPlayer from '@/components/AudioPlayer'
 
 type Track = {
   id: number
@@ -9,17 +11,18 @@ type Track = {
   artist: string
   price: string
   is_free: number
+  file_path: string
+  cover_image: string
   created_at: string
   updated_at: string
-  file_path: string
 }
-
 
 export default function Music() {
   const [tracks, setTracks] = useState<Track[]>([])
   const [filter, setFilter] = useState<'all' | 'free' | 'paid'>('all')
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { setMessage } = useMessage()
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
 
   useEffect(() => {
     const fetchTracks = async () => {
@@ -31,22 +34,33 @@ export default function Music() {
         }
         const data = await response.json()
         setTracks(data)
-        setError(null)
+        setMessage({
+          type: 'success',
+          content: 'Music tracks loaded successfully.',
+        })
       } catch (err) {
-        setError('An error occurred while fetching tracks. Please try again later.')
+        console.error('Error fetching tracks:', err)
+        setMessage({
+          type: 'error',
+          content: 'An error occurred while fetching tracks. Please try again later.'
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchTracks()
-  }, [])
+  }, [setMessage])
 
   const filteredTracks = tracks.filter(track => {
     if (filter === 'free') return track.is_free === 1
     if (filter === 'paid') return track.is_free === 0
     return true
   })
+
+  const handlePlay = (track: Track) => {
+    setCurrentTrack(track);
+  }
 
   const handleDownload = (track: Track) => {
     // Implement download logic here
@@ -62,14 +76,6 @@ export default function Music() {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-red-500 text-xl">{error}</p>
       </div>
     )
   }
@@ -112,35 +118,48 @@ export default function Music() {
             transition={{ delay: index * 0.1 }}
             className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
           >
-      <img 
-  src={track.file_path} 
-  alt={track.title} 
-  className="w-full h-48 object-cover" 
-/>
-
+            <img 
+              src={`http://127.0.0.1:8000/storage/public/uploads/images/${track.cover_image}`} 
+              alt={track.title} 
+              className="w-full h-48 object-cover" 
+            />
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{track.title}</h3>
               <p className="text-gray-600 dark:text-gray-300">{track.artist}</p>
               <p className="text-gray-500 dark:text-gray-400">{track.album}</p>
+              <button
+                onClick={() => handlePlay(track)}
+                className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300 mr-2"
+              >
+                Play
+              </button>
               {track.is_free === 1 ? (
                 <button
                   onClick={() => handleDownload(track)}
-                  className="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                  className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
                 >
                   Download
                 </button>
               ) : (
                 <button
                   onClick={() => handlePurchase(track)}
-                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                  className="mt-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
                 >
-                  Purchase (${track.price})
+                  Purchase (${parseFloat(track.price).toFixed(2)})
                 </button>
               )}
             </div>
           </motion.div>
         ))}
       </div>
+
+      {currentTrack && (
+        <AudioPlayer
+          src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+        />
+      )}
     </motion.div>
   )
 }

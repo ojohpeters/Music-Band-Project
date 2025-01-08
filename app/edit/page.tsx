@@ -47,7 +47,6 @@ const EditForm: React.FC = () => {
           }
 
           const data = await response.json();
-          // Handle both direct object response and nested object response
           const itemData = data[type.charAt(0).toUpperCase() + type.slice(1)] || data;
           setFormData(Array.isArray(itemData) ? itemData[0] : itemData);
         } catch (error) {
@@ -57,6 +56,8 @@ const EditForm: React.FC = () => {
             content: error instanceof Error ? error.message : "Failed to load data",
           });
         }
+      } else {
+        setFormData({});
       }
       setIsLoading(false);
     };
@@ -68,11 +69,10 @@ const EditForm: React.FC = () => {
     const { name, value, type } = e.target;
     if (type === 'file') {
       const fileInput = e.target as HTMLInputElement;
-      setFormData({ ...formData, [name]: fileInput.files ? fileInput.files[0] : null });
+      setFormData(prev => ({ ...prev, [name]: fileInput.files ? fileInput.files[0] : null }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
-    // Clear the error for this field when the user starts typing
     setErrors(prev => ({ ...prev, [name]: [] }));
   };
 
@@ -81,33 +81,45 @@ const EditForm: React.FC = () => {
     setErrors({});
     try {
       const token = localStorage.getItem("authToken");
-      const url = itemId ? `http://127.0.0.1:8000/api/${type}/${itemId}` : `http://127.0.0.1:8000/api/${type}`;
-      const method = itemId ? "POST" : "POST"; // Changed to POST for both create and update due to file upload
-
+      const url = itemId 
+        ? `http://127.0.0.1:8000/api/${type}/${itemId}`
+        : `http://127.0.0.1:8000/api/${type}`;
+  
+      const method = itemId ? "POST" : "POST";  // Keep this as POST
+      
       const formDataToSend = new FormData();
+      
+      // For update operations, we need to specify this is actually a PUT request
+      if (itemId) {
+        formDataToSend.append('_method', 'PUT');  // This tells Laravel to treat it as PUT
+      }
+  
+      // Handle the form data
       Object.keys(formData).forEach(key => {
         if (formData[key] !== null && formData[key] !== undefined) {
-          formDataToSend.append(key, formData[key]);
+          // Special handling for file inputs
+          if ((key === 'file_path' || key === 'cover_image') && formData[key] instanceof File) {
+            formDataToSend.append(key, formData[key]);
+          } 
+          // Handle all other fields
+          else if (!(formData[key] instanceof File)) {
+            formDataToSend.append(key, formData[key]);
+          }
         }
       });
-
-      if (itemId) {
-        formDataToSend.append('_method', 'PUT'); // For Laravel to recognize this as a PUT request
-      }
-
+  
       const response = await fetch(url, {
-        method: method,
+        method: "POST",  // Always POST when sending files with FormData
         headers: {
           "Authorization": `Bearer ${token}`,
-          // Don't set Content-Type here, let the browser set it with the boundary for multipart/form-data
+          // Don't set Content-Type - let the browser set it with the boundary
         },
         body: formDataToSend,
       });
-
       if (!response.ok) {
         const errorData = await response.json();
-        if (errorData.errors) {
-          setErrors(errorData.errors);
+        if (errorData.messages) {
+          setErrors(errorData.messages);
           throw new Error("Validation failed");
         }
         throw new Error(`Failed to ${itemId ? 'update' : 'create'} ${type}`);
@@ -223,9 +235,176 @@ const EditForm: React.FC = () => {
                 accept=".mp3,.wav"
                 required={!itemId}
               />
-              {errors.file_path && <p className="text-red-500 text-sm mt-1">{errors.file_path[0]}</p>}
+              {errors.file_path && <p className="text-red-500 text-sm mt-1">{errors.file_path.join(', ')}</p>}
               {formData.file_path && typeof formData.file_path === 'string' && (
                 <p className="text-sm text-gray-600 mt-1">Current file: {formData.file_path}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="cover_image" className="text-gray-700 dark:text-gray-300 block mb-1">Cover Image:</label>
+              <input
+                type="file"
+                id="cover_image"
+                name="cover_image"
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                accept="image/*"
+              />
+              {errors.cover_image && <p className="text-red-500 text-sm mt-1">{errors.cover_image[0]}</p>}
+              {formData.cover_image && typeof formData.cover_image === 'string' && (
+                <img src={formData.cover_image} alt="Current cover" className="mt-2 max-w-xs" />
+              )}
+            </div>
+          </>
+        );
+
+      case "events":
+        return (
+          <>
+            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
+            <div>
+              <label htmlFor="name" className="text-gray-700 dark:text-gray-300 block mb-1">Event Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="date" className="text-gray-700 dark:text-gray-300 block mb-1">Event Date:</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={formData.date || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="location" className="text-gray-700 dark:text-gray-300 block mb-1">Event Location:</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="price" className="text-gray-700 dark:text-gray-300 block mb-1">Event Price:</label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+                min="0"
+                step="0.01"
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="cover_image" className="text-gray-700 dark:text-gray-300 block mb-1">Event Cover Image:</label>
+              <input
+                type="file"
+                id="cover_image"
+                name="cover_image"
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                accept="image/*"
+              />
+              {errors.cover_image && <p className="text-red-500 text-sm mt-1">{errors.cover_image[0]}</p>}
+              {formData.cover_image && typeof formData.cover_image === 'string' && (
+                <img src={formData.cover_image} alt="Current event cover" className="mt-2 max-w-xs" />
+              )}
+            </div>
+          </>
+        );
+
+      case "users":
+        return (
+          <>
+            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
+            <div>
+              <label htmlFor="name" className="text-gray-700 dark:text-gray-300 block mb-1">Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="date" className="text-gray-700 dark:text-gray-300 block mb-1">Event Date:</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={formData.date || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="location" className="text-gray-700 dark:text-gray-300 block mb-1">Event Location:</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+              />
+              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="price" className="text-gray-700 dark:text-gray-300 block mb-1">Event Price:</label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                required
+                min="0"
+                step="0.01"
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price[0]}</p>}
+            </div>
+            <div>
+              <label htmlFor="cover_image" className="text-gray-700 dark:text-gray-300 block mb-1">Event Cover Image:</label>
+              <input
+                type="file"
+                id="cover_image"
+                name="cover_image"
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
+                accept="image/*"
+              />
+              {errors.cover_image && <p className="text-red-500 text-sm mt-1">{errors.cover_image[0]}</p>}
+              {formData.cover_image && typeof formData.cover_image === 'string' && (
+                <img src={formData.cover_image} alt="Current event cover" className="mt-2 max-w-xs" />
               )}
             </div>
           </>
@@ -300,66 +479,6 @@ const EditForm: React.FC = () => {
                 <option value="admin">Admin</option>
               </select>
               {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role[0]}</p>}
-            </div>
-          </>
-        );
-      case "events":
-        return (
-          <>
-            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
-            <div>
-              <label htmlFor="name" className="text-gray-700 dark:text-gray-300 block mb-1">Event Name:</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="date" className="text-gray-700 dark:text-gray-300 block mb-1">Event Date:</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="location" className="text-gray-700 dark:text-gray-300 block mb-1">Event Location:</label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="price" className="text-gray-700 dark:text-gray-300 block mb-1">Event Price:</label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-                min="0"
-                step="0.01"
-              />
-              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price[0]}</p>}
             </div>
           </>
         );

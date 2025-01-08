@@ -10,6 +10,7 @@ type Event = {
   date: string
   location: string
   price: string
+  cover_image: string
   created_at: string
   updated_at: string
 }
@@ -29,6 +30,10 @@ export default function Events() {
         }
         const data = await response.json()
         setEvents(data.Events)
+        setMessage({
+          type: 'success',
+          content: 'Events loaded successfully.',
+        })
       } catch (err) {
         console.error('Error fetching events:', err)
         setMessage({
@@ -71,6 +76,7 @@ export default function Events() {
               transition={{ delay: index * 0.1 }}
               className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
             >
+              <img src={event.cover_image} alt={event.name} className="w-full h-48 object-cover" />
               <div className="p-6">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{event.name}</h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-2">

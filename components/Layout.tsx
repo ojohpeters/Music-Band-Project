@@ -2,7 +2,7 @@
 import { useState, useEffect, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { HomeIcon, MusicalNoteIcon, CalendarIcon, UserIcon, MoonIcon, SunIcon } from '@heroicons/react/24/outline'
+import { HomeIcon, MusicalNoteIcon, CalendarIcon, UserIcon, MoonIcon, SunIcon, CogIcon } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 
@@ -15,13 +15,31 @@ export default function Layout({ children }: LayoutProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    const checkAuthStatus = () => {
+    const checkAuthStatus = async () => {
       const token = localStorage.getItem('authToken')
       setIsLoggedIn(!!token)
+      if (token) {
+        try {
+          const response = await fetch('http://127.0.0.1:8000/api/user', {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            setUserRole(userData.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      } else {
+        setUserRole(null);
+      }
     }
 
     checkAuthStatus()
@@ -52,7 +70,11 @@ export default function Layout({ children }: LayoutProps) {
 
   // Add Profile link only if user is logged in
   const fullNavItems = isLoggedIn
-    ? [...navItems, { name: 'Profile', href: '/profile', icon: UserIcon }]
+    ? [
+        ...navItems,
+        { name: 'Profile', href: '/profile', icon: UserIcon },
+        ...(userRole === 'admin' ? [{ name: 'Admin', href: '/admin', icon: CogIcon }] : [])
+      ]
     : navItems
 
   const authItems = isLoggedIn
@@ -76,7 +98,7 @@ export default function Layout({ children }: LayoutProps) {
       className="w-64 h-full bg-white dark:bg-gray-900 overflow-y-auto"
     >
       <div className="flex items-center justify-center mt-8">
-        <span className="text-2xl font-semibold text-gray-800 dark:text-white">Music Band</span>
+        <span className="text-2xl font-semibold text-gray-800 dark:text-white">Peters Music Site</span>
       </div>
       <nav className="mt-10">
         {[...fullNavItems, ...authItems].map((item, index) => (

@@ -113,7 +113,10 @@ const AdminPage = () => {
   };
 
   const handleEdit = (type: string, id?: string) => {
-    router.push(`/edit?type=${type}${id ? `&id=${id}` : ''}`);
+    console.log(`Editing ${type} with ID: ${id}`);
+    const url = `/edit?type=${type}${id ? `&id=${id}` : ''}`;
+    console.log(`Navigating to: ${url}`);
+    router.push(url);
   };
 
   const handleDelete = async (type: string, id: string) => {
@@ -186,13 +189,13 @@ const AdminPage = () => {
                 <td className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">{track.album}</td>
                 <td className="border border-gray-300 px-4 py-2">
                   <button
-                    onClick={() => handleEdit("music-tracks", track.id)}
+                    onClick={() => handleEdit("music-tracks", track.id.toString())}
                     className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 mx-1"
                   >
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("music-tracks", track.id)}
+                    onClick={() => handleDelete("music-tracks", track.id.toString())}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />
@@ -225,6 +228,7 @@ const AdminPage = () => {
               <th className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">Name</th>
               <th className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">Email</th>
               <th className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">Role</th>
+              <th className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -243,13 +247,13 @@ const AdminPage = () => {
                   ) : (
                     <>
                       <button
-                        onClick={() => handleEdit("users", user.id)}
+                        onClick={() => handleEdit("users", user.id.toString())}
                         className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 mx-1"
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete("users", user.id)}
+                        onClick={() => handleDelete("users", user.id.toString())}
                         className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -275,8 +279,9 @@ const AdminPage = () => {
         <PlusIcon className="h-5 w-5 mr-2" />
         Add Event
       </button>
+      {console.log("Events data:", events)}
       {events.length === 0 || events.every(event => Object.keys(event).length === 0 || !event.name || !event.date) ? (
-  <p>No events found.</p>
+        <p>No events found.</p>
       ) : (
         <table className="min-w-full mt-4 border-collapse border border-gray-300">
           <thead>
@@ -293,13 +298,13 @@ const AdminPage = () => {
                 <td className="border border-gray-300 px-4 py-2 text-gray-800 dark:text-gray-200">{event.date}</td>
                 <td className="border border-gray-300 px-4 py-2">
                   <button
-                    onClick={() => handleEdit("events", event.id)}
+                    onClick={() => handleEdit("events", event.id.toString())}
                     className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 mx-1"
                   >
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("events", event.id)}
+                    onClick={() => handleDelete("events", event.id.toString())}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 mx-1"
                   >
                     <TrashIcon className="h-4 w-4" />

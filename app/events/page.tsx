@@ -76,7 +76,12 @@ export default function Events() {
               transition={{ delay: index * 0.1 }}
               className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
             >
-              <img src={event.cover_image} alt={event.name} className="w-full h-48 object-cover" />
+              {/* <img src={event.cover_image} alt={event.name} className="w-full h-48 object-cover" /> */}
+              <img 
+              src={`http://127.0.0.1:8000/storage/public/uploads/images/${event.cover_image}`} 
+              alt={event.name} 
+              className="w-full h-48 object-cover" 
+            />
               <div className="p-6">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{event.name}</h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-2">

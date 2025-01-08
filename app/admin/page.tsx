@@ -114,9 +114,7 @@ const AdminPage = () => {
 
   const handleEdit = (type: string, id?: string) => {
     console.log(`Editing ${type} with ID: ${id}`);
-    const url = `/edit?type=${type}${id ? `&id=${id}` : ''}`;
-    console.log(`Navigating to: ${url}`);
-    router.push(url);
+    router.push(`/edit?type=${type}${id ? `&id=${id}` : ''}`);
   };
 
   const handleDelete = async (type: string, id: string) => {
@@ -279,9 +277,8 @@ const AdminPage = () => {
         <PlusIcon className="h-5 w-5 mr-2" />
         Add Event
       </button>
-      {console.log("Events data:", events)}
       {events.length === 0 || events.every(event => Object.keys(event).length === 0 || !event.name || !event.date) ? (
-        <p>No events found.</p>
+  <p>No events found.</p>
       ) : (
         <table className="min-w-full mt-4 border-collapse border border-gray-300">
           <thead>

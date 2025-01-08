@@ -203,7 +203,6 @@ const EditForm: React.FC = () => {
                 value={formData.price || ""}
                 onChange={handleChange}
                 className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
                 min="0"
                 step="0.01"
               />
@@ -332,83 +331,7 @@ const EditForm: React.FC = () => {
               )}
             </div>
           </>
-        );
-
-      case "users":
-        return (
-          <>
-            <input type="hidden" name="id" value={formData.id || ''} onChange={handleChange} />
-            <div>
-              <label htmlFor="name" className="text-gray-700 dark:text-gray-300 block mb-1">Name:</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="date" className="text-gray-700 dark:text-gray-300 block mb-1">Event Date:</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="location" className="text-gray-700 dark:text-gray-300 block mb-1">Event Location:</label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-              />
-              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="price" className="text-gray-700 dark:text-gray-300 block mb-1">Event Price:</label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                required
-                min="0"
-                step="0.01"
-              />
-              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price[0]}</p>}
-            </div>
-            <div>
-              <label htmlFor="cover_image" className="text-gray-700 dark:text-gray-300 block mb-1">Event Cover Image:</label>
-              <input
-                type="file"
-                id="cover_image"
-                name="cover_image"
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700"
-                accept="image/*"
-              />
-              {errors.cover_image && <p className="text-red-500 text-sm mt-1">{errors.cover_image[0]}</p>}
-              {formData.cover_image && typeof formData.cover_image === 'string' && (
-                <img src={formData.cover_image} alt="Current event cover" className="mt-2 max-w-xs" />
-              )}
-            </div>
-          </>
-        );
+        );     
       case "users":
         return (
           <>

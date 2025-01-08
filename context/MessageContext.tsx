@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react'
 
-type MessageType = 'success' | 'error' | 'info'
+type MessageType = 'success' | 'error' | 'info | Success | Error| Info'
 
 interface Message {
   type: MessageType
@@ -34,3 +34,4 @@ export const useMessage = () => {
   return context
 }
 
+``

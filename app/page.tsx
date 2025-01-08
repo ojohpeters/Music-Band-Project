@@ -184,14 +184,14 @@ export default function Home() {
           </div>
         )}
       </div>
-
       {currentTrack && (
-        <AudioPlayer
-          src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
-          title={currentTrack.title}
-          artist={currentTrack.artist}
-        />
-      )}
+  <AudioPlayer
+    src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
+    title={currentTrack.title}
+    artist={currentTrack.artist}
+    onClose={() => setCurrentTrack(null)}
+  />
+)}
     </motion.div>
   )
 }

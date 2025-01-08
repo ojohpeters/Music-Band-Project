@@ -62,13 +62,38 @@ export default function Music() {
     setCurrentTrack(track);
   }
 
-  const handleDownload = (track: Track) => {
-    // Implement download logic here
-    console.log(`Downloading ${track.title}`)
-  }
+  const handleDownload = async (track: Track) => {
+    try {
+      const url = `http://127.0.0.1:8000/api/download/${track.id}`; // New endpoint
+  
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        credentials: 'include'
+      });
+  
+      if (!response.ok) throw new Error('Download failed');
+  
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${track.title}.mp3`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
+  
 
   const handlePurchase = (track: Track) => {
-    // Implement purchase logic here
     console.log(`Purchasing ${track.title}`)
   }
 
@@ -154,12 +179,14 @@ export default function Music() {
       </div>
 
       {currentTrack && (
-        <AudioPlayer
-          src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
-          title={currentTrack.title}
-          artist={currentTrack.artist}
-        />
-      )}
+  <AudioPlayer
+    src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
+    title={currentTrack.title}
+    artist={currentTrack.artist}
+    onClose={() => setCurrentTrack(null)}
+  />
+)}
+
     </motion.div>
   )
 }

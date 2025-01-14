@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useMessage } from '@/context/MessageContext'
 import AudioPlayer from '@/components/AudioPlayer'
+import Link from 'next/link'
 
 type Track = {
   id: number
@@ -33,7 +34,8 @@ export default function Music() {
           throw new Error('Failed to fetch tracks')
         }
         const data = await response.json()
-        setTracks(data)
+        console.log('Music tracks API response:', data)
+        setTracks(Array.isArray(data) ? data : data.MusicTracks || [])
         setMessage({
           type: 'success',
           content: 'Music tracks loaded successfully.',
@@ -62,39 +64,13 @@ export default function Music() {
     setCurrentTrack(track);
   }
 
-  const handleDownload = async (track: Track) => {
-    try {
-      const url = `http://127.0.0.1:8000/api/download/${track.id}`; // New endpoint
-  
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        credentials: 'include'
-      });
-  
-      if (!response.ok) throw new Error('Download failed');
-  
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${track.title}.mp3`;
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error('Download error:', error);
-    }
-  };
-  
+  const handleCancel = () => {
+    setCurrentTrack(null);
+  }
 
-  const handlePurchase = (track: Track) => {
-    console.log(`Purchasing ${track.title}`)
+  const handleDownload = (track: Track) => {
+    // Implement download logic here
+    console.log(`Downloading ${track.title}`)
   }
 
   if (isLoading) {
@@ -135,58 +111,63 @@ export default function Music() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
-        {filteredTracks.map((track, index) => (
-          <motion.div
-            key={track.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
-          >
-            <img 
-              src={`http://127.0.0.1:8000/storage/public/uploads/images/${track.cover_image}`} 
-              alt={track.title} 
-              className="w-full h-48 object-cover" 
-            />
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{track.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300">{track.artist}</p>
-              <p className="text-gray-500 dark:text-gray-400">{track.album}</p>
-              <button
-                onClick={() => handlePlay(track)}
-                className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300 mr-2"
-              >
-                Play
-              </button>
-              {track.is_free === 1 ? (
+        {filteredTracks.length === 0 ? (
+          <p className="text-xl text-center text-gray-500 dark:text-gray-300 col-span-full">No tracks available at the moment...</p>
+        ) : (
+          filteredTracks.map((track, index) => (
+            <motion.div
+              key={track.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden card-hover"
+            >
+              <img 
+                src={`http://127.0.0.1:8000/storage/public/uploads/images/${track.cover_image}`} 
+                alt={track.title} 
+                className="w-full h-48 object-cover" 
+              />
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{track.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300">{track.artist}</p>
+                <p className="text-gray-500 dark:text-gray-400">{track.album}</p>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                  {track.is_free ? 'Free' : `$${parseFloat(track.price).toFixed(2)}`}
+                </p>
                 <button
-                  onClick={() => handleDownload(track)}
-                  className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                  onClick={() => handlePlay(track)}
+                  className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300 mr-2"
                 >
-                  Download
+                  Play
                 </button>
-              ) : (
-                <button
-                  onClick={() => handlePurchase(track)}
-                  className="mt-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
-                >
-                  Purchase (${parseFloat(track.price).toFixed(2)})
-                </button>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                {track.is_free === 1 ? (
+                  <button
+                    onClick={() => handleDownload(track)}
+                    className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+                  >
+                    Download
+                  </button>
+                ) : (
+                  <Link href={`/purchase?id=${track.id}&type=music-track`}>
+                    <span className="mt-2 inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300">
+                      Purchase (${parseFloat(track.price).toFixed(2)})
+                    </span>
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
 
       {currentTrack && (
-  <AudioPlayer
-    src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
-    title={currentTrack.title}
-    artist={currentTrack.artist}
-    onClose={() => setCurrentTrack(null)}
-  />
-)}
-
+        <AudioPlayer
+          src={`http://127.0.0.1:8000/storage/public/uploads/music/${currentTrack.file_path}`}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+          onCancel={handleCancel}
+        />
+      )}
     </motion.div>
   )
 }

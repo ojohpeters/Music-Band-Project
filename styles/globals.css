@@ -69,7 +69,7 @@ body {
 
 @media (min-width: 768px) {
     main {
-        margin-left: 16rem;
+        /* margin-left: 16rem; */
         /* 256px, which is the width of the sidebar */
     }
 }
